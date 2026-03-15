@@ -1,29 +1,37 @@
 require('dotenv').config();
-const express = require('express');
-const cors    = require('cors');
-const bcrypt  = require('bcryptjs');
-const jwt     = require('jsonwebtoken');
-const low     = require('lowdb');
-const FileSync = require('lowdb/adapters/FileSync');
+const express  = require('express');
+const cors     = require('cors');
+const bcrypt   = require('bcryptjs');
+const jwt      = require('jsonwebtoken');
 
 const app        = express();
 const PORT       = process.env.PORT || 8000;
 const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_key';
 
-// ── Database setup (lowdb - saves to db.json file) ──
-const adapter = new FileSync('db.json');
-const db      = low(adapter);
+const users = [
+  {
+    id: 1,
+    name: 'Admin User',
+    email: 'admin@example.com',
+    password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+  },
+  {
+    id: 2,
+    name: 'Test User',
+    email: 'test@example.com',
+    password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+  },
+  {
+    id: 3,
+    name: 'Juan dela Cruz',
+    email: 'juan@example.com',
+    password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+  },
+];
 
-db.defaults({ users: [] }).write();
-
-// ── Middleware ──
-app.use(cors({
-  origin: '*',
-  credentials: false,
-}));
+app.use(cors({ origin: '*' }));
 app.use(express.json());
 
-// ── Routes ──
 app.get('/', (req, res) => {
   res.json({ message: 'IP Geolocation API is running!' });
 });
@@ -39,7 +47,7 @@ app.post('/api/login', async (req, res) => {
       });
     }
 
-    const user = db.get('users').find({ email }).value();
+    const user = users.find(u => u.email === email);
 
     if (!user) {
       return res.status(401).json({
@@ -48,9 +56,9 @@ app.post('/api/login', async (req, res) => {
       });
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isValid = await bcrypt.compare(password, user.password);
 
-    if (!isPasswordValid) {
+    if (!isValid) {
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password.'
@@ -67,36 +75,16 @@ app.post('/api/login', async (req, res) => {
       success: true,
       message: 'Login successful!',
       token,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-      },
+      user: { id: user.id, name: user.name, email: user.email },
     });
 
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error.'
-    });
-  }
-});
-
-app.get('/api/me', (req, res) => {
-  try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) return res.status(401).json({ success: false, message: 'No token.' });
-
-    const token   = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, JWT_SECRET);
-    res.json({ success: true, user: decoded });
-  } catch {
-    res.status(401).json({ success: false, message: 'Invalid token.' });
+    res.status(500).json({ success: false, message: 'Internal server error.' });
   }
 });
 
 app.listen(PORT, () => {
   console.log(`✅ Server running at http://localhost:${PORT}`);
-  console.log(`📋 Login endpoint: POST http://localhost:${PORT}/api/login`);
 });
+
+module.exports = app;
