@@ -3,38 +3,21 @@ const express  = require('express');
 const cors     = require('cors');
 const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
+const fs       = require('fs');
+const path     = require('path');
 
 const app        = express();
 const PORT       = process.env.PORT || 8000;
 const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_key';
 
-const users = [
-  {
-    id: 1,
-    name: 'Admin User',
-    email: 'admin@example.com',
-    password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
-  },
-  {
-    id: 2,
-    name: 'Test User',
-    email: 'test@example.com',
-    password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
-  },
-  {
-    id: 3,
-    name: 'Juan dela Cruz',
-    email: 'juan@example.com',
-    password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
-  },
-];
+function getUsers() {
+  const dbPath = path.join(__dirname, 'db.json');
+  const raw    = fs.readFileSync(dbPath, 'utf-8');
+  return JSON.parse(raw).users;
+}
 
 app.use(cors({ origin: '*' }));
 app.use(express.json());
-
-app.get('/', (req, res) => {
-  res.json({ message: 'IP Geolocation API is running!' });
-});
 
 app.post('/api/login', async (req, res) => {
   try {
@@ -47,7 +30,8 @@ app.post('/api/login', async (req, res) => {
       });
     }
 
-    const user = users.find(u => u.email === email);
+    const users = getUsers();
+    const user  = users.find(u => u.email === email);
 
     if (!user) {
       return res.status(401).json({
@@ -57,7 +41,6 @@ app.post('/api/login', async (req, res) => {
     }
 
     const isValid = await bcrypt.compare(password, user.password);
-
     if (!isValid) {
       return res.status(401).json({
         success: false,
@@ -79,8 +62,18 @@ app.post('/api/login', async (req, res) => {
     });
 
   } catch (error) {
+    console.error(error);
     res.status(500).json({ success: false, message: 'Internal server error.' });
   }
+});
+
+// Serve React frontend build
+const frontendBuild = path.join(__dirname, '../frontend/build');
+app.use(express.static(frontendBuild));
+
+// React Router catch-all — must be last
+app.get('*', (req, res) => {
+  res.sendFile(path.join(frontendBuild, 'index.html'));
 });
 
 app.listen(PORT, () => {

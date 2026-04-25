@@ -2,55 +2,29 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './LoginPage.css';
 
-const API_URL = 'https://ip-geolocation-backend.vercel.app/api/login';
-
-const Icons = {
-  login: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-      <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
-      <polyline points="10 17 15 12 10 7"/>
-      <line x1="15" y1="12" x2="3" y2="12"/>
-    </svg>
-  ),
-  spinner: (
-    <svg className="spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-      <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.95 7.05l2.83-2.83"/>
-    </svg>
-  ),
-  alert: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-      <circle cx="12" cy="12" r="10"/>
-      <line x1="12" y1="8" x2="12" y2="12"/>
-      <line x1="12" y1="16" x2="12.01" y2="16"/>
-    </svg>
-  ),
-  sun: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-      <circle cx="12" cy="12" r="5"/>
-      <line x1="12" y1="1" x2="12" y2="3"/>
-      <line x1="12" y1="21" x2="12" y2="23"/>
-      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-      <line x1="1" y1="12" x2="3" y2="12"/>
-      <line x1="21" y1="12" x2="23" y2="12"/>
-      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-    </svg>
-  ),
-  moon: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-    </svg>
-  ),
+const Icon = {
+  globe: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{width:18,height:18}}><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>,
+  sun:  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{width:13,height:13}}><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>,
+  moon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{width:13,height:13}}><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>,
+  lock: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{width:16,height:16}}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
+  alert: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{width:14,height:14}}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,
+  spinner: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{width:16,height:16}} className="spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>,
+  arrow: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{width:16,height:16}}><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>,
 };
 
-function useParticles(canvasRef, isDark) {
+export default function LoginPage({ isDark, setIsDark }) {
+  const navigate = useNavigate();
+  const canvasRef = useRef(null);
+  const [form, setForm]         = useState({ email: '', password: '' });
+  const [errors, setErrors]     = useState({});
+  const [loading, setLoading]   = useState(false);
+  const [apiError, setApiError] = useState('');
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     let animId;
-
     const resize = () => {
       canvas.width  = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -58,105 +32,46 @@ function useParticles(canvasRef, isDark) {
     resize();
     window.addEventListener('resize', resize);
 
-    const TOTAL = 45;
-    const particles = Array.from({ length: TOTAL }, () => ({
-      x:     Math.random() * window.innerWidth,
-      y:     Math.random() * window.innerHeight,
-      r:     Math.random() * 1.6 + 0.3,
-      vx:    (Math.random() - 0.5) * 0.35,
-      vy:    (Math.random() - 0.5) * 0.35,
+    const particles = Array.from({ length: 40 }, () => ({
+      x:     Math.random() * canvas.width,
+      y:     Math.random() * canvas.height,
+      vx:    (Math.random() - 0.5) * 0.3,
+      vy:    (Math.random() - 0.5) * 0.3,
+      r:     Math.random() * 1.5 + 0.5,
       alpha: Math.random() * 0.4 + 0.1,
     }));
 
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const color = isDark ? 'rgba(0,180,255,' : 'rgba(37,99,235,';
-
-      for (let i = 0; i < TOTAL; i++) {
-        for (let j = i + 1; j < TOTAL; j++) {
-          const dx   = particles[i].x - particles[j].x;
-          const dy   = particles[i].y - particles[j].y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 130) {
-            ctx.beginPath();
-            ctx.strokeStyle = `${color}${(1 - dist / 130) * 0.12})`;
-            ctx.lineWidth   = 0.5;
-            ctx.moveTo(particles[i].x, particles[i].y);
-            ctx.lineTo(particles[j].x, particles[j].y);
-            ctx.stroke();
-          }
-        }
-      }
-
       particles.forEach(p => {
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `${color}${p.alpha})`;
-        ctx.fill();
         p.x += p.vx;
         p.y += p.vy;
-        if (p.x < 0 || p.x > canvas.width)  p.vx *= -1;
-        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+        if (p.x < 0) p.x = canvas.width;
+        if (p.x > canvas.width) p.x = 0;
+        if (p.y < 0) p.y = canvas.height;
+        if (p.y > canvas.height) p.y = 0;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = isDark
+          ? `rgba(0,180,255,${p.alpha})`
+          : `rgba(37,99,235,${p.alpha * 0.6})`;
+        ctx.fill();
       });
-
       animId = requestAnimationFrame(draw);
     };
-
     draw();
+
     return () => {
       cancelAnimationFrame(animId);
       window.removeEventListener('resize', resize);
     };
-  }, [canvasRef, isDark]);
-}
-
-function useCoords() {
-  const [coords, setCoords] = useState({ lat: '14.0010', lng: '120.0028' });
-  useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(pos => {
-        setCoords({
-          lat: pos.coords.latitude.toFixed(4),
-          lng: pos.coords.longitude.toFixed(4),
-        });
-      });
-    }
-  }, []);
-  return coords;
-}
-
-export default function LoginPage({ isDark, setIsDark }) {
-  const navigate  = useNavigate();
-  const canvasRef = useRef(null);
-  const coords    = useCoords();
-
-  const [form, setForm]         = useState({ email: '', password: '' });
-  const [errors, setErrors]     = useState({});
-  const [apiError, setApiError] = useState('');
-  const [loading, setLoading]   = useState(false);
-
-  useParticles(canvasRef, isDark);
+  }, [isDark]);
 
   function validate() {
     const errs = {};
-    if (!form.email.trim()) {
-      errs.email = 'Email is required.';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      errs.email = 'Invalid email address.';
-    }
-    if (!form.password) {
-      errs.password = 'Password is required.';
-    } else if (form.password.length < 6) {
-      errs.password = 'Min. 6 characters.';
-    }
+    if (!form.email)    errs.email    = 'Email is required.';
+    if (!form.password) errs.password = 'Password is required.';
     return errs;
-  }
-
-  function handleChange(e) {
-    const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
-    if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
-    setApiError('');
   }
 
   async function handleSubmit(e) {
@@ -166,15 +81,18 @@ export default function LoginPage({ isDark, setIsDark }) {
     setLoading(true);
     setApiError('');
     try {
-      const res  = await fetch(API_URL, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify(form),
-      });
+      const res  = await fetch(
+        `${process.env.REACT_APP_API_URL || ''}/api/login`,
+        {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify(form),
+        }
+      );
       const data = await res.json();
-      if (data.success) {
+      if (res.ok) {
         localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem('user',  JSON.stringify(data.user));
         navigate('/');
       } else {
         setApiError(data.message || 'Authentication failed.');
@@ -192,95 +110,75 @@ export default function LoginPage({ isDark, setIsDark }) {
       <div className="orb-1" />
       <div className="orb-2" />
 
-      {/* Theme toggle */}
       <button className="theme-toggle" onClick={() => setIsDark(d => !d)}>
-        {isDark ? Icons.sun : Icons.moon}
-        <span>{isDark ? 'Light' : 'Dark'}</span>
+        {isDark ? Icon.sun : Icon.moon}
+        {isDark ? 'Light' : 'Dark'}
       </button>
 
       <div className="login-card">
-
-        {/* Status tag */}
         <div className="status-tag">
-          <div className="status-dot" />
-          System Online · {coords.lat}°N {coords.lng}°E
+          <span className="status-dot" />
+          System Online
         </div>
 
-        {/* Header */}
         <div className="login-header">
-          <h1>IP <span>Geolocation</span><br/>Dashboard</h1>
-          <p>Enter your credentials to continue</p>
+          <h1>{Icon.globe} <span>IP</span> Geolocation</h1>
+          <p>Sign in to access the geolocation dashboard.</p>
         </div>
 
-        {/* Divider */}
-        <div className="login-divider">
-          <span>Secure Login</span>
-        </div>
+        <div className="login-divider"><span>Authentication Required</span></div>
 
-        {/* Error */}
         {apiError && (
           <div className="alert-error">
-            {Icons.alert} {apiError}
+            {Icon.alert} {apiError}
           </div>
         )}
 
-        {/* Form */}
         <form onSubmit={handleSubmit} noValidate>
           <div className="form-group">
             <label htmlFor="email">Email Address</label>
             <input
               id="email"
-              name="email"
               type="email"
               placeholder="admin@example.com"
               value={form.email}
-              onChange={handleChange}
               className={errors.email ? 'has-error' : ''}
-              autoComplete="email"
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck="false"
+              onChange={e => { setForm({ ...form, email: e.target.value }); setErrors({}); }}
             />
-            {errors.email && (
-              <span className="error-msg">{Icons.alert} {errors.email}</span>
-            )}
+            {errors.email && <span className="error-msg">{Icon.alert} {errors.email}</span>}
           </div>
 
           <div className="form-group">
             <label htmlFor="password">Password</label>
             <input
               id="password"
-              name="password"
               type="password"
-              placeholder="••••••••••"
+              placeholder="••••••••"
               value={form.password}
-              onChange={handleChange}
               className={errors.password ? 'has-error' : ''}
-              autoComplete="current-password"
+              onChange={e => { setForm({ ...form, password: e.target.value }); setErrors({}); }}
             />
-            {errors.password && (
-              <span className="error-msg">{Icons.alert} {errors.password}</span>
-            )}
+            {errors.password && <span className="error-msg">{Icon.alert} {errors.password}</span>}
           </div>
 
           <button type="submit" className="login-btn" disabled={loading}>
-            {loading ? Icons.spinner : Icons.login}
-            {loading ? 'Authenticating...' : 'Sign In'}
+            {loading
+              ? <>{Icon.spinner} Authenticating…</>
+              : <>{Icon.lock} Sign In {Icon.arrow}</>
+            }
           </button>
         </form>
 
-        {/* Footer */}
         <div className="login-footer">
           <div className="footer-left">
-            Signal Encrypted<br/>
-            TLS 1.3 · AES-256
+            IP Geolocation<br />
+            Dashboard v1.0
           </div>
           <div className="footer-right">
             <strong>admin@example.com</strong>
-            <strong>password123</strong>
+            password123
           </div>
         </div>
-
       </div>
     </div>
   );
