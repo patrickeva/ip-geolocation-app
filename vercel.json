@@ -1,20 +1,13 @@
 {
-  "version": 2,
-  "buildCommand": "npm --prefix frontend install && npm --prefix frontend run build",
-  "installCommand": "npm --prefix backend install",
-  "builds": [
-    {
-      "src": "backend/server.js",
-      "use": "@vercel/node",
-      "config": {
-        "includeFiles": ["frontend/build/**", "backend/db.json"]
-      }
+  "experimentalServices": {
+    "frontend": {
+      "entrypoint": "frontend",
+      "routePrefix": "/",
+      "framework": "create-react-app"
+    },
+    "backend": {
+      "entrypoint": "backend",
+      "routePrefix": "/_/backend"
     }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "backend/server.js"
-    }
-  ]
+  }
 }

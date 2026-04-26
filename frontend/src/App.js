@@ -8,6 +8,14 @@ function getUser() {
     const token = localStorage.getItem('token');
     const user  = localStorage.getItem('user');
     if (!token || !user) return null;
+
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    if (payload.exp * 1000 < Date.now()) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      return null;
+    }
+
     return JSON.parse(user);
   } catch { return null; }
 }
