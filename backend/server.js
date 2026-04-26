@@ -67,15 +67,6 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// Serve React frontend build
-const frontendBuild = path.join(__dirname, '../frontend/build');
-app.use(express.static(frontendBuild));
-
-// React Router catch-all — must be last
-app.get('*', (req, res) => {
-  res.sendFile(path.join(frontendBuild, 'index.html'));
-});
-
 app.listen(PORT, () => {
   console.log(`✅ Server running at http://localhost:${PORT}`);
 });
