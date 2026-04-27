@@ -82,7 +82,7 @@ export default function LoginPage({ isDark, setIsDark }) {
     setApiError('');
     try {
       const res  = await fetch(
-        `${process.env.REACT_APP_API_URL || ''}/api/login`,
+        `${import.meta.env.VITE_API_URL || ''}/api/login`,
         {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
